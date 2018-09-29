@@ -2,6 +2,8 @@ This is a Unity editor script and shader that will take an aritrary mesh and use
 
 You can find the generator window under Xiexe > Tools > XSBonerGenerator.
 
+"Armature" needs to be the top level object underneath the Animator.
+
 Animator should be your Avatar top level object, with the animator on it.
 
 Bone Model should be the model you want your bones to show as - we have some presets in the Bone Stuff > Bone Models folder.
