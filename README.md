@@ -16,3 +16,4 @@ If you want to take advantage of this easily, use my Toon shader or another shad
 IKLines are lines between the legs and arms that show IK chains. The shader for this works the same as the bone material, in that it supports stenciling, and should be the same reference value as the others. 
 IK Lines are optional.
 
+![Image](https://i.imgur.com/yb9taGz.jpg)
