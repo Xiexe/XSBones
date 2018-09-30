@@ -356,12 +356,14 @@ public class XSBonerGenerator : EditorWindow {
         upperV.x *= scale.x;
         upperV.y *= scale.y;
         upperV.z *= scale.z;
+        upperV += ani.transform.position;
         vertices.Add(upperV);
 
         Vector3 jointV = jointT.position;
         jointV.x *= scale.x;
         jointV.y *= scale.y;
         jointV.z *= scale.z;
+        jointV += ani.transform.position;
         vertices.Add(jointV);
 
         vertices.Add(upperV);
