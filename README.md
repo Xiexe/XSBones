@@ -1,4 +1,4 @@
-This is a Unity editor script and shader that will take an aritrary mesh and use it to show the bones of a humanoid or non humanoid avatar. 
+This is a Unity editor script and shader that will take an arbitrary mesh and use it to show the bones of a humanoid or non humanoid avatar. 
 
 You can find the generator window under Xiexe > Tools > XSBonerGenerator.
 
