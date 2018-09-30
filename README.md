@@ -1,4 +1,5 @@
-This is a Unity editor script and shader that will take an arbitrary mesh and use it to show the bones of a humanoid or non humanoid avatar.
+
+This is a Unity editor script and shader that will take an arbitrary mesh and use it to show the bones of a humanoid or non humanoid avatar. 
 
 You can find the generator window under Xiexe > Tools > XSBonerGenerator.
 
@@ -16,6 +17,10 @@ Please note that the stencil will default to 1 for the ref.
 
 IKLines are lines between the legs and arms that show IK chains. The shader for this works the same as the bone material, in that it supports stenciling, and should be the same reference value as the others. IK Lines are optional.
 
+Please note that the stencil will default to 1 for the ref.
+
+IKLines are lines between the legs and arms that show IK chains. The shader for this works the same as the bone material, in that it supports stenciling, and should be the same reference value as the others. 
+IK Lines are optional.
 
 
 ![Image](https://i.imgur.com/yb9taGz.jpg)
