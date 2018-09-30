@@ -3,6 +3,8 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.IO;
 
 public class XSBonerGenerator : EditorWindow {
     private Object armatureObj;
@@ -18,9 +20,9 @@ public class XSBonerGenerator : EditorWindow {
     private List<BoneWeight> boneWeights;
     private List<CombineInstance> combineInstances;
     private List<Color> coloUrs;
-	private Object startingBone;
+    private Object startingBone;
 
-	[MenuItem("Xiexe/Tools/XSBonerGenerator")]
+    [MenuItem("Xiexe/Tools/XSBonerGenerator")]
     static void Init()
     {
         XSBonerGenerator window = (XSBonerGenerator)GetWindow(typeof(XSBonerGenerator));
@@ -33,46 +35,46 @@ public class XSBonerGenerator : EditorWindow {
         if (armatureObj != null) {
             ani = (Animator)armatureObj;
         } else
-		{
-			startingBone = null;
-			smr = null;
-		}
+        {
+            startingBone = null;
+            smr = null;
+        }
 
-		if (armatureObj && !ani.isHuman)
-		{
-			if (startingBone == null)
-			{
-				if (ani.transform.childCount > 0)
-				{
-					startingBone = ani.transform.GetChild(0);
-					for (int i = 0; i < ani.transform.childCount; i++)
-					{
-						if (ani.transform.GetChild(i).childCount > 0)
-						{
-							startingBone = ani.transform.GetChild(i).GetChild(0);
-							break;
-						}
-					}
-				}
-			}
-			startingBone = EditorGUILayout.ObjectField(new GUIContent("Starting Bone", "Where the bones start from"), startingBone, typeof(Transform), true);
-		} else
-		{
-			startingBone = null;
-		}
+        if (armatureObj && !ani.isHuman)
+        {
+            if (startingBone == null)
+            {
+                if (ani.transform.childCount > 0)
+                {
+                    startingBone = ani.transform.GetChild(0);
+                    for (int i = 0; i < ani.transform.childCount; i++)
+                    {
+                        if (ani.transform.GetChild(i).childCount > 0)
+                        {
+                            startingBone = ani.transform.GetChild(i).GetChild(0);
+                            break;
+                        }
+                    }
+                }
+            }
+            startingBone = EditorGUILayout.ObjectField(new GUIContent("Starting Bone", "Where the bones start from"), startingBone, typeof(Transform), true);
+        } else
+        {
+            startingBone = null;
+        }
 
-		bone = EditorGUILayout.ObjectField(new GUIContent("Bone Model", "The Model to use as the bone"), bone, typeof(Object), true);
-		if (armatureObj != null && smr == null)
-		{
-			foreach (SkinnedMeshRenderer skinedmeshr in ani.GetComponentsInChildren<SkinnedMeshRenderer>())
-			{
-				if (skinedmeshr.transform.parent == ani.transform)
-				{
-					smr = skinedmeshr;
-					break;
-				}
-			}
-		}
+        bone = EditorGUILayout.ObjectField(new GUIContent("Bone Model", "The Model to use as the bone"), bone, typeof(Object), true);
+        if (armatureObj != null && smr == null)
+        {
+            foreach (SkinnedMeshRenderer skinedmeshr in ani.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (skinedmeshr.transform.parent == ani.transform)
+                {
+                    smr = skinedmeshr;
+                    break;
+                }
+            }
+        }
         smr = EditorGUILayout.ObjectField(new GUIContent("Skinned Mesh Renderer", "The main skinned mesh renderer"), smr, typeof(SkinnedMeshRenderer), true);
         boneMaterial = (Material)EditorGUILayout.ObjectField(new GUIContent("Bone Material", "The Material you want for your bones"), boneMaterial, typeof(Material), true);
 
@@ -82,46 +84,64 @@ public class XSBonerGenerator : EditorWindow {
             }
             haveIKLines = EditorGUILayout.Toggle("Have IK Lines", haveIKLines);
         } else
-		{
-			haveIKLines = false;
-		}
-
-		bool error = false;
-		if (armatureObj == null)
-		{
-			EditorGUILayout.HelpBox("No Animator found", MessageType.Error);
-			error = true;
-		}
-		if (bone == null)
-		{
-			EditorGUILayout.HelpBox("No Bone Object found", MessageType.Error);
-			error = true;
-		}
-		if (smr == null)
-		{
-			EditorGUILayout.HelpBox("No Skinned Mesh Renderer found", MessageType.Error);
-			error = true;
-		}
-		if (boneMaterial == null)
-		{
-			EditorGUILayout.HelpBox("No Bone Material found", MessageType.Error);
-			error = true;
-		}
-		if (ikMaterial == null && haveIKLines)
-		{
-			EditorGUILayout.HelpBox("No IK Material found", MessageType.Error);
-			error = true;
-		}
-
-		if (error) return;
-
-		EditorGUILayout.Separator();
-
-		if (GUILayout.Button("Generate"))
         {
+            haveIKLines = false;
+        }
+
+        bool error = false;
+        if (armatureObj == null)
+        {
+            EditorGUILayout.HelpBox("No Animator found", MessageType.Error);
+            error = true;
+        }
+        if (bone == null)
+        {
+            EditorGUILayout.HelpBox("No Bone Object found", MessageType.Error);
+            error = true;
+        }
+        if (smr == null)
+        {
+            EditorGUILayout.HelpBox("No Skinned Mesh Renderer found", MessageType.Error);
+            error = true;
+        }
+        if (boneMaterial == null)
+        {
+            EditorGUILayout.HelpBox("No Bone Material found", MessageType.Error);
+            error = true;
+        }
+        if (ikMaterial == null && haveIKLines)
+        {
+            EditorGUILayout.HelpBox("No IK Material found", MessageType.Error);
+            error = true;
+        }
+
+        if (error) return;
+
+        EditorGUILayout.Separator();
+
+        if (GUILayout.Button("Generate"))
+        {
+
+            string[] guids1 = AssetDatabase.FindAssets("XSBonerGenerator", null);
+            string untouchedString = AssetDatabase.GUIDToAssetPath(guids1[0]);
+            string[] splitString = untouchedString.Split('/');
+
+            ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
+            ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
+
+            string finalFilePath = string.Join("/", splitString);
+            finalFilePath += "/Generated";
+
+            if (!Directory.Exists(finalFilePath)) {
+                Directory.CreateDirectory(finalFilePath);
+            }
+
             bone = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(bone), typeof(Object));
             boneMaterial = (Material)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(boneMaterial), typeof(Material));
             ikMaterial = (Material)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(ikMaterial), typeof(Material));
+
+            string name = Regex.Replace(ani.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
+            string bonename = Regex.Replace(bone.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
 
             bones = new List<Transform>();
             bonesByHash = new Hashtable();
@@ -132,11 +152,11 @@ public class XSBonerGenerator : EditorWindow {
             int boneIndex = 0;
             foreach (Transform _bone in ((SkinnedMeshRenderer)smr).bones)
             {
-				if (_bone != null) {
-					bones.Add(_bone);
-					bonesByHash.Add(_bone.name, boneIndex);
-					boneIndex++;
-				}
+                if (_bone != null) {
+                    bones.Add(_bone);
+                    bonesByHash.Add(_bone.name, boneIndex);
+                    boneIndex++;
+                }
             }
 
             recursiveShit(startingBone != null ? (Transform)startingBone : ani.GetBoneTransform(HumanBodyBones.Hips), collectDynamicBones(ani.transform));
@@ -150,13 +170,13 @@ public class XSBonerGenerator : EditorWindow {
             }
 
 
-            GameObject yourBones = new GameObject(ani.name + "_YourBones");
+            GameObject yourBones = new GameObject(name + "_" + bonename + "_YourBones");
             yourBones.transform.parent = ani.transform;
 
             SkinnedMeshRenderer yourSkinnedMeshRenderer = yourBones.AddComponent<SkinnedMeshRenderer>();
             yourSkinnedMeshRenderer.sharedMesh = new Mesh
             {
-                name = ani.name + "_YourBones"
+                name = name + "_" + bonename + "_YourBones"
             };
             yourSkinnedMeshRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray());
 
@@ -199,7 +219,7 @@ public class XSBonerGenerator : EditorWindow {
 
             yourSkinnedMeshRenderer.sharedMesh.RecalculateBounds();
 
-            AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh, "Assets/" + ani.name + "_YourBones.asset");
+            AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh, finalFilePath + "/" + name + "_" + bonename + "_YourBones.asset");
             AssetDatabase.SaveAssets();
 
             armatureObj = null;
@@ -244,20 +264,20 @@ public class XSBonerGenerator : EditorWindow {
     private void recursiveShit(Transform transform, HashSet<Transform> dynamicBones)
     {
         bool dynbone = dynamicBones.Contains(transform);
-		if (transform.gameObject.activeInHierarchy && bones.Contains(transform))
-		{
-			for (int i = 0; i < transform.childCount; i++)
-			{
+        if (transform.gameObject.activeInHierarchy && bones.Contains(transform))
+        {
+            for (int i = 0; i < transform.childCount; i++)
+            {
 
-				if (transform.GetChild(i).gameObject.activeInHierarchy)
-				{
-					addCapColl(transform, transform.GetChild(i), dynbone);
-				}
+                if (transform.GetChild(i).gameObject.activeInHierarchy)
+                {
+                    addCapColl(transform, transform.GetChild(i), dynbone);
+                }
 
-				// Always recurse - can have dynamic bones under non-dynamic bones
-				recursiveShit(transform.GetChild(i), dynamicBones);
-			}
-		}
+                // Always recurse - can have dynamic bones under non-dynamic bones
+                recursiveShit(transform.GetChild(i), dynamicBones);
+            }
+        }
     }
  
     //tranform1 = main
