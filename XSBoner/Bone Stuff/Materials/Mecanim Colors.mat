@@ -19,7 +19,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Floats:
-    - _Stencil: 0
+    - _Stencil: 1
     - _WireSmoothness: 3
     - _WireThickness: 300
     m_Colors:
