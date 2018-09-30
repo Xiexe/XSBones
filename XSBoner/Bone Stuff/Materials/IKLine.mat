@@ -19,6 +19,6 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Floats:
-    - _Stencil: 0
+    - _Stencil: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 0, a: 1}
