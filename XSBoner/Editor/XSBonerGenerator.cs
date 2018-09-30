@@ -92,7 +92,7 @@ public class XSBonerGenerator : EditorWindow {
 				boneIndex++;
 			}
 
-			recursiveShit(ani.transform.GetChild(0).GetChild(0));
+			recursiveShit(ani.transform.GetChild(0).GetChild(0), collectDynamicBones(ani.transform));
 
 			//keep bindposes 
 			List<Matrix4x4> bindposes = new List<Matrix4x4>();
@@ -160,24 +160,59 @@ public class XSBonerGenerator : EditorWindow {
 			armatureObj = null;
 		}
     }
-	//tranform1 = main
-	//tranform2 = child
-    private void recursiveShit(Transform transform, bool dynbone = false)
+
+    private HashSet<Transform> collectDynamicBones(Transform transform)
     {
-		if (transform.GetComponents<DynamicBone>().Length > 0)
-		{
-			dynbone = true;
-		}
+        HashSet<Transform> results = new HashSet<Transform>();
+        collectDynamicBones(transform, results);
+        return results;
+    }
+
+    private void collectDynamicBones(Transform transform, HashSet<Transform> results)
+    {
+        foreach (DynamicBone dynamicBone in transform.GetComponents<DynamicBone>())
+        {
+            collectDynamicBonesForOneScript(dynamicBone.m_Root, dynamicBone.m_Exclusions, results);
+        }
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            collectDynamicBones(transform.GetChild(i), results);
+        }
+    }
+
+    private void collectDynamicBonesForOneScript(Transform transform, List<Transform> exclusions, HashSet<Transform> results)
+    {
+        if (exclusions.Contains(transform))
+        {
+            return;
+        }
+
+        results.Add(transform);
+
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            collectDynamicBonesForOneScript(transform.GetChild(i), exclusions, results);
+        }
+    }
+
+    private void recursiveShit(Transform transform, HashSet<Transform> dynamicBones)
+    {
+        bool dynbone = dynamicBones.Contains(transform);
         for (int i = 0; i < transform.childCount; i++)
         {
 			if (transform.gameObject.activeInHierarchy && bones.Contains(transform))
 			{
 				addCapColl(transform, transform.GetChild(i), dynbone);
-				recursiveShit(transform.GetChild(i), dynbone);
 			}
+
+            // Always recurse - can have dynamic bones under non-dynamic bones
+            recursiveShit(transform.GetChild(i), dynamicBones);
         }
     }
  
+    //tranform1 = main
+    //tranform2 = child
     private void addCapColl(Transform transform1, Transform transform2, bool dynbone)
     {	
 
