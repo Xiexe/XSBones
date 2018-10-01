@@ -117,7 +117,7 @@ public class XSBonerGenerator : EditorWindow {
             DestroyImmediate(boneMesh);
 
             List<Transform> _bones = new List<Transform>();
-            foreach (Transform _bone in ((SkinnedMeshRenderer)smr).bones)
+            foreach (Transform _bone in smr.bones)
             {
                 if (_bone != null) {
                     _bones.Add(_bone);
@@ -193,7 +193,7 @@ public class XSBonerGenerator : EditorWindow {
             // Grabs all bones and their index
             // This might actually be wrong but it seemed to work
             int boneIndex = 0;
-            foreach (Transform _bone in ((SkinnedMeshRenderer)smr).bones)
+            foreach (Transform _bone in smr.bones)
             {
                 if (_bone != null) {
                     bones.Add(_bone);
@@ -345,7 +345,6 @@ public class XSBonerGenerator : EditorWindow {
                 if (transform.GetChild(i).gameObject.activeInHierarchy)
                 {
                     totalAddedForCounting += 1;
-                    Debug.Log(totalAddedForCounting);
                 }
                 recursiveShitForCounting(transform.GetChild(i), _bones);
             }
