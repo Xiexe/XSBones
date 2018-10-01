@@ -7,15 +7,13 @@ using System.Text.RegularExpressions;
 using System.IO;
 
 public class XSBonerGenerator : EditorWindow {
-    private Object armatureObj;
+    private Animator ani;
     private static GameObject boneModel;
     private SkinnedMeshRenderer smr;
     private static Material boneMaterial;
     private static Material ikMaterial;
     private bool haveIKLines;
     private bool spookMode;
-    private Animator ani;
-
     private List<Transform> bones;
     private Hashtable bonesByHash;
     private List<BoneWeight> boneWeights;
@@ -23,34 +21,35 @@ public class XSBonerGenerator : EditorWindow {
     private List<Color> coloUrs;
     private Object startingBone;
     private int vertCount = 0;
-    private static string pathToGenerated;
-    private static string editorPath;
+    private string finalFilePath = null;
+    private string pathToGenerated;
+    private string editorPath;
     private int totalAddedForCounting;
 
     [MenuItem("Xiexe/Tools/XSBonerGenerator")]
     static void Init()
     {
-        // Global variables have to be static
-        string finalFilePath = findAssetPath();
-
-        pathToGenerated = finalFilePath + "/Generated";
-        editorPath = finalFilePath + "/Editor";
-
-        if (!Directory.Exists(pathToGenerated)) {
-            Directory.CreateDirectory(pathToGenerated);
-        }
-
-        // Defaults
-        boneModel = (GameObject)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Bone Models/Unity Mecanim Bone.obj", typeof(GameObject));
-        boneMaterial = (Material)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Materials/Bones/Mecanim Colors.mat", typeof(Material));
-        ikMaterial = (Material)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Materials/IK Lines/IKLine Yellow.mat", typeof(Material));
-
         XSBonerGenerator window = (XSBonerGenerator)GetWindow(typeof(XSBonerGenerator));
         window.Show();
     }
 
     private void OnGUI()
     {
+        if (finalFilePath == null) {
+            finalFilePath = findAssetPath();
+            pathToGenerated = finalFilePath + "/Generated";
+            editorPath = finalFilePath + "/Editor";
+
+            if (!Directory.Exists(pathToGenerated)) {
+                Directory.CreateDirectory(pathToGenerated);
+            }
+            
+            // Defaults
+            boneModel = (GameObject)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Bone Models/Unity Mecanim Bone.obj", typeof(GameObject));
+            boneMaterial = (Material)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Materials/Bones/Mecanim Colors.mat", typeof(Material));
+            ikMaterial = (Material)AssetDatabase.LoadAssetAtPath(finalFilePath + "/Bone Stuff/Materials/IK Lines/IKLine Yellow.mat", typeof(Material));
+        }
+
         bool aniChanged = false;
         Animator ani_old = ani;
         ani = (Animator)EditorGUILayout.ObjectField(new GUIContent("Animator Object", "Your Model's Animator object"), ani, typeof(Animator), true);
