@@ -13,7 +13,8 @@ public class XSBonerGenerator : EditorWindow {
     private Material boneMaterial;
     private Material ikMaterial;
     private bool haveIKLines;
-    private Animator ani;
+    private bool spookMode;
+	private Animator ani;
 
     private List<Transform> bones;
     private Hashtable bonesByHash;
@@ -21,6 +22,7 @@ public class XSBonerGenerator : EditorWindow {
     private List<CombineInstance> combineInstances;
     private List<Color> coloUrs;
     private Object startingBone;
+
 
     [MenuItem("Xiexe/Tools/XSBonerGenerator")]
     static void Init()
@@ -87,6 +89,9 @@ public class XSBonerGenerator : EditorWindow {
         {
             haveIKLines = false;
         }
+		
+	//Toggle for Spook Mode
+		spookMode = EditorGUILayout.Toggle("Spook Mode (Optional)", spookMode);
 
         bool error = false;
         if (armatureObj == null)
@@ -128,12 +133,13 @@ public class XSBonerGenerator : EditorWindow {
 
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
-
+			
             string finalFilePath = string.Join("/", splitString);
-            finalFilePath += "/Generated";
+            string pathToGenerated = finalFilePath + "/Generated";
+			string editorPath = string.Join("/", splitString) + "/Editor";
 
-            if (!Directory.Exists(finalFilePath)) {
-                Directory.CreateDirectory(finalFilePath);
+            if (!Directory.Exists(pathToGenerated)) {
+                Directory.CreateDirectory(pathToGenerated);
             }
 
             bone = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(bone), typeof(Object));
@@ -178,6 +184,18 @@ public class XSBonerGenerator : EditorWindow {
             {
                 name = name + "_" + bonename + "_YourBones"
             };
+
+		//Adding Audio Source for Super Spooky Mode.
+			if (spookMode){
+				yourBones.AddComponent<AudioSource>();
+				AudioSource doot = yourBones.GetComponent<AudioSource>();
+				doot.clip = (AudioClip)AssetDatabase.LoadAssetAtPath(editorPath + "/Doot.mp3", typeof(AudioClip));
+				doot.spatialBlend = 1;
+				doot.dopplerLevel = 0;
+				doot.minDistance = 2;
+				doot.maxDistance = 10;
+			}
+		//----
             yourSkinnedMeshRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray());
 
             Vector3 scale = ani.transform.localScale;
@@ -219,7 +237,7 @@ public class XSBonerGenerator : EditorWindow {
 
             yourSkinnedMeshRenderer.sharedMesh.RecalculateBounds();
 
-            AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh, finalFilePath + "/" + name + "_" + bonename + "_YourBones.asset");
+            AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh, pathToGenerated + "/" + name + "_" + bonename + "_YourBones.asset");
             AssetDatabase.SaveAssets();
 
             armatureObj = null;
