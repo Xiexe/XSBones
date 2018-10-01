@@ -25,6 +25,7 @@ public class XSBonerGenerator : EditorWindow {
     private int vertCount = 0;
     private static string pathToGenerated;
     private static string editorPath;
+    private int totalAddedForCounting;
 
     [MenuItem("Xiexe/Tools/XSBonerGenerator")]
     static void Init()
@@ -114,14 +115,17 @@ public class XSBonerGenerator : EditorWindow {
                 vertCount = -1;
             }
             DestroyImmediate(boneMesh);
-            int vertsCounts = vertCount;
-            foreach (Transform _bone in smr.bones)
+
+            List<Transform> _bones = new List<Transform>();
+            foreach (Transform _bone in ((SkinnedMeshRenderer)smr).bones)
             {
-                if (_bone != null && _bone.gameObject.activeInHierarchy) {
-                    vertsCounts += vertCount;
+                if (_bone != null) {
+                    _bones.Add(_bone);
                 }
             }
-            vertCount = vertsCounts;
+            totalAddedForCounting = 0;
+            recursiveShitForCounting(startingBone != null ? (Transform)startingBone : ani.GetBoneTransform(HumanBodyBones.Hips), _bones);
+            vertCount = vertCount*totalAddedForCounting+12; // 12 for the IK verts even though they might not be enabled, it wont matter that much
         }
 
         if (ani && ani.isHuman) {
@@ -328,6 +332,22 @@ public class XSBonerGenerator : EditorWindow {
 
                 // Always recurs - can have dynamic bones under non-dynamic bones
                 recursiveShit(transform.GetChild(i), dynamicBones);
+            }
+        }
+    }
+
+    private void recursiveShitForCounting(Transform transform, List<Transform> _bones)
+    {
+        if (transform.gameObject.activeInHierarchy && _bones.Contains(transform))
+        {
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                if (transform.GetChild(i).gameObject.activeInHierarchy)
+                {
+                    totalAddedForCounting += 1;
+                    Debug.Log(totalAddedForCounting);
+                }
+                recursiveShitForCounting(transform.GetChild(i), _bones);
             }
         }
     }
