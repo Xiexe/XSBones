@@ -293,7 +293,13 @@ public class XSBonerGenerator : EditorWindow {
     {
         foreach (DynamicBone dynamicBone in transform.GetComponents<DynamicBone>())
         {
-            collectDynamicBonesForOneScript(dynamicBone.m_Root, dynamicBone.m_Exclusions, results);
+            Transform root = dynamicBone.m_Root;
+            List<Transform> exclusions = dynamicBone.m_Exclusions;
+
+            // Faithfully replicating Dynamic Bone quirk where excluding the root (AKA target bone) is ignored.
+            exclusions.Remove(root);
+
+            collectDynamicBonesForOneScript(root, exclusions, results);
         }
 
         for (int i = 0; i < transform.childCount; i++)
