@@ -185,7 +185,8 @@ public class XSBonerGenerator : EditorWindow {
                 name = name + "_" + bonename + "_YourBones"
             };
 
-        //Adding Audio Source for Super Spooky Mode.
+
+            //Adding Audio Source for Super Spooky Mode.
             if (spookMode){
                 yourBones.AddComponent<AudioSource>();
                 AudioSource doot = yourBones.GetComponent<AudioSource>();
@@ -239,6 +240,10 @@ public class XSBonerGenerator : EditorWindow {
 
             AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh, pathToGenerated + "/" + name + "_" + bonename + "_YourBones.asset");
             AssetDatabase.SaveAssets();
+
+            Mesh previousMesh = yourSkinnedMeshRenderer.sharedMesh;
+            yourSkinnedMeshRenderer.sharedMesh = null;
+            yourSkinnedMeshRenderer.sharedMesh = previousMesh;
 
             armatureObj = null;
         }

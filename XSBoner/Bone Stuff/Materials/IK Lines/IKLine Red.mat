@@ -4,8 +4,9 @@
 Material:
   serializedVersion: 6
   m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
   m_Name: IKLine Red
   m_Shader: {fileID: 4800000, guid: bb535250c98d7484a8962797206e97df, type: 3}
   m_ShaderKeywords: 
@@ -19,6 +20,6 @@ Material:
     serializedVersion: 3
     m_TexEnvs: []
     m_Floats:
-    - _Stencil: 80
+    - _Stencil: 0
     m_Colors:
     - _Color: {r: 1, g: 0, b: 0, a: 1}
