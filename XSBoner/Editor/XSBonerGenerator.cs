@@ -14,7 +14,7 @@ public class XSBonerGenerator : EditorWindow {
     private Material ikMaterial;
     private bool haveIKLines;
     private bool spookMode;
-	private Animator ani;
+    private Animator ani;
 
     private List<Transform> bones;
     private Hashtable bonesByHash;
@@ -89,9 +89,9 @@ public class XSBonerGenerator : EditorWindow {
         {
             haveIKLines = false;
         }
-		
-	//Toggle for Spook Mode
-		spookMode = EditorGUILayout.Toggle("Spook Mode (Optional)", spookMode);
+        
+    //Toggle for Spook Mode
+        spookMode = EditorGUILayout.Toggle("Spook Mode (Optional)", spookMode);
 
         bool error = false;
         if (armatureObj == null)
@@ -133,10 +133,10 @@ public class XSBonerGenerator : EditorWindow {
 
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
-			
+            
             string finalFilePath = string.Join("/", splitString);
             string pathToGenerated = finalFilePath + "/Generated";
-			string editorPath = string.Join("/", splitString) + "/Editor";
+            string editorPath = string.Join("/", splitString) + "/Editor";
 
             if (!Directory.Exists(pathToGenerated)) {
                 Directory.CreateDirectory(pathToGenerated);
@@ -185,17 +185,17 @@ public class XSBonerGenerator : EditorWindow {
                 name = name + "_" + bonename + "_YourBones"
             };
 
-		//Adding Audio Source for Super Spooky Mode.
-			if (spookMode){
-				yourBones.AddComponent<AudioSource>();
-				AudioSource doot = yourBones.GetComponent<AudioSource>();
-				doot.clip = (AudioClip)AssetDatabase.LoadAssetAtPath(editorPath + "/Doot.mp3", typeof(AudioClip));
-				doot.spatialBlend = 1;
-				doot.dopplerLevel = 0;
-				doot.minDistance = 2;
-				doot.maxDistance = 10;
-			}
-		//----
+        //Adding Audio Source for Super Spooky Mode.
+            if (spookMode){
+                yourBones.AddComponent<AudioSource>();
+                AudioSource doot = yourBones.GetComponent<AudioSource>();
+                doot.clip = (AudioClip)AssetDatabase.LoadAssetAtPath(editorPath + "/Doot.mp3", typeof(AudioClip));
+                doot.spatialBlend = 1;
+                doot.dopplerLevel = 0;
+                doot.minDistance = 2;
+                doot.maxDistance = 10;
+            }
+        //----
             yourSkinnedMeshRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray());
 
             Vector3 scale = ani.transform.localScale;
@@ -310,14 +310,25 @@ public class XSBonerGenerator : EditorWindow {
         boneSpawn.transform.LookAt(transform2.position);
         boneSpawn.transform.rotation = Quaternion.Euler(boneSpawn.transform.rotation.eulerAngles + new Vector3(90f,0,0));
         bool isHumanoid = false;
-        foreach (HumanBodyBones bone in HumanBodyBones.GetValues(typeof(HumanBodyBones)))
+
+        for (int i = 0; i < 55; i++)
         {
+            HumanBodyBones bone = (HumanBodyBones)i;
             if (ani.GetBoneTransform(bone) != null && ani.GetBoneTransform(bone).name == transform1.name)
             {
                 isHumanoid = true;
                 break;
             }
         }
+
+        /*foreach (HumanBodyBones bone in HumanBodyBones.GetValues(typeof(HumanBodyBones)))
+        {
+            if (ani.GetBoneTransform(bone) != null && ani.GetBoneTransform(bone).name == transform1.name)
+            {
+                isHumanoid = true;
+                break;
+            }
+        }*/
 
         InsertSMRToCombine(boneSpawn.GetComponentInChildren<MeshFilter>(), transform1.name, isHumanoid, dynbone);
         DestroyImmediate(boneSpawn);
