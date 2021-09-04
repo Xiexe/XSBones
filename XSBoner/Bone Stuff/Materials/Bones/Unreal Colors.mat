@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Unreal Colors
-  m_Shader: {fileID: 4800000, guid: 0c8883c9f5e14344a9bd87df2cca2040, type: 3}
+  m_Shader: {fileID: 4800000, guid: d52dbcf523676404d8cd10878b0e8de9, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0

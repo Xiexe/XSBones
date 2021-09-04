@@ -1,4 +1,4 @@
-﻿Shader "Xiexe/XSBoner/Bones"
+﻿Shader "Xiexe/XSBoner/UnityMecanim"
 {
 	Properties
 	{
