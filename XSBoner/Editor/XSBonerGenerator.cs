@@ -1,10 +1,12 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Collections;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.IO;
+using Object = UnityEngine.Object;
 
 public class XSBonerGenerator : EditorWindow {
     private Object armatureObj;
@@ -316,7 +318,17 @@ public class XSBonerGenerator : EditorWindow {
         boneSpawn.transform.rotation = Quaternion.Euler(boneSpawn.transform.rotation.eulerAngles + new Vector3(90f,0,0));
         bool isHumanoid = false;
 
-        for (int i = 0; i < 55; i++)
+        for (int i = 0; i < (int)HumanBodyBones.LastBone; i++)
+        {
+            HumanBodyBones bone = (HumanBodyBones) i;
+            if (ani.GetBoneTransform(bone) != null && ani.GetBoneTransform(bone).name == transform1.name)
+            {
+                isHumanoid = true;
+                break;
+            }
+        }
+        
+        /*for (int i = 0; i < 55; i++)
         {
             HumanBodyBones bone = (HumanBodyBones)i;
             if (ani.GetBoneTransform(bone) != null && ani.GetBoneTransform(bone).name == transform1.name)
@@ -324,7 +336,7 @@ public class XSBonerGenerator : EditorWindow {
                 isHumanoid = true;
                 break;
             }
-        }
+        }*/
 
         /*foreach (HumanBodyBones bone in HumanBodyBones.GetValues(typeof(HumanBodyBones)))
         {
