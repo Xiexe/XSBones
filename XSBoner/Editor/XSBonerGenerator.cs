@@ -1,36 +1,51 @@
-﻿using System.Collections;
+﻿using System;
+using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
-using System.IO;
+using System.Collections;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEditor;
-using UnityEngine;
+using System.IO;
+using VRC.SDK3.Dynamics.PhysBone.Components;
+using Object = UnityEngine.Object;
 
 public class XSBonerGenerator : EditorWindow
 {
-    private Animator ani;
     private Object armatureObj;
     private Object bone;
+    private Object smr;
     private Material boneMaterial;
+    private Material ikMaterial;
+    private bool haveIKLines;
+    private bool spookMode;
+    private Animator ani;
 
     private List<Transform> bones;
     private Hashtable bonesByHash;
     private List<BoneWeight> boneWeights;
-    private List<Color> coloUrs;
     private List<CombineInstance> combineInstances;
-    private bool haveIKLines;
-    private Material ikMaterial;
-    private Object smr;
-    private bool spookMode;
+    private List<Color> coloUrs;
     private Object startingBone;
+
+    [MenuItem("Xiexe/Tools/XSBonerGenerator")]
+    static void Init()
+    {
+        XSBonerGenerator window = (XSBonerGenerator)GetWindow(typeof(XSBonerGenerator));
+        window.Show();
+    }
 
     private void OnGUI()
     {
-        armatureObj = EditorGUILayout.ObjectField(new GUIContent("Animator Object", "Your Model's Animator object"),
-            armatureObj, typeof(Animator), true);
+        armatureObj = EditorGUILayout.ObjectField(
+            new GUIContent("Animator Object", "Your Model's Animator object"),
+            armatureObj,
+            typeof(Animator),
+            true
+        );
+
         if (armatureObj != null)
         {
-            ani = (Animator) armatureObj;
+            ani = (Animator)armatureObj;
         }
         else
         {
@@ -41,47 +56,78 @@ public class XSBonerGenerator : EditorWindow
         if (armatureObj && !ani.isHuman)
         {
             if (startingBone == null)
+            {
                 if (ani.transform.childCount > 0)
                 {
                     startingBone = ani.transform.GetChild(0);
-                    for (var i = 0; i < ani.transform.childCount; i++)
+                    for (int i = 0; i < ani.transform.childCount; i++)
+                    {
                         if (ani.transform.GetChild(i).childCount > 0)
                         {
                             startingBone = ani.transform.GetChild(i).GetChild(0);
                             break;
                         }
+                    }
                 }
+            }
 
-            startingBone = EditorGUILayout.ObjectField(new GUIContent("Starting Bone", "Where the bones start from"),
-                startingBone, typeof(Transform), true);
+            startingBone = EditorGUILayout.ObjectField(
+                new GUIContent("Starting Bone", "Where the bones start from"),
+                startingBone,
+                typeof(Transform),
+                true
+            );
         }
         else
         {
             startingBone = null;
         }
 
-        bone = EditorGUILayout.ObjectField(new GUIContent("Bone Model", "The Model to use as the bone"), bone,
-            typeof(Object), true);
+        bone = EditorGUILayout.ObjectField(
+            new GUIContent("Bone Model", "The Model to use as the bone"),
+            bone,
+            typeof(Object),
+            true
+        );
+
         if (armatureObj != null && smr == null)
-            foreach (var skinedmeshr in ani.GetComponentsInChildren<SkinnedMeshRenderer>())
-                if (skinedmeshr.transform.parent == ani.transform)
+        {
+            foreach (SkinnedMeshRenderer skinnedMeshRenderer in ani.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (skinnedMeshRenderer.transform.parent == ani.transform)
                 {
-                    smr = skinedmeshr;
+                    smr = skinnedMeshRenderer;
                     break;
                 }
+            }
+        }
 
-        smr = EditorGUILayout.ObjectField(new GUIContent("Skinned Mesh Renderer", "The main skinned mesh renderer"),
-            smr, typeof(SkinnedMeshRenderer), true);
-        boneMaterial = (Material) EditorGUILayout.ObjectField(
-            new GUIContent("Bone Material", "The Material you want for your bones"), boneMaterial, typeof(Material),
-            true);
+        smr = EditorGUILayout.ObjectField(
+            new GUIContent("Skinned Mesh Renderer", "The main skinned mesh renderer"),
+            smr,
+            typeof(SkinnedMeshRenderer),
+            true
+        );
+
+        boneMaterial = (Material)EditorGUILayout.ObjectField(
+            new GUIContent("Bone Material", "The Material you want for your bones"),
+            boneMaterial,
+            typeof(Material),
+            true
+        );
 
         if (armatureObj && ani.isHuman)
         {
             if (haveIKLines)
-                ikMaterial = (Material) EditorGUILayout.ObjectField(
-                    new GUIContent("IK Material", "The Material you want for your IK Lines"), ikMaterial,
-                    typeof(Material), true);
+            {
+                ikMaterial = (Material)EditorGUILayout.ObjectField(
+                    new GUIContent("IK Material", "The Material you want for your IK Lines"),
+                    ikMaterial,
+                    typeof(Material),
+                    true
+                );
+            }
+
             haveIKLines = EditorGUILayout.Toggle("Have IK Lines", haveIKLines);
         }
         else
@@ -89,10 +135,10 @@ public class XSBonerGenerator : EditorWindow
             haveIKLines = false;
         }
 
-        //Toggle for Spook Mode
         spookMode = EditorGUILayout.Toggle("Spook Mode (Optional)", spookMode);
 
-        var error = false;
+        bool error = false;
+
         if (armatureObj == null)
         {
             EditorGUILayout.HelpBox("No Animator found", MessageType.Error);
@@ -123,33 +169,37 @@ public class XSBonerGenerator : EditorWindow
             error = true;
         }
 
-        if (error) return;
+        if (error)
+        {
+            return;
+        }
 
         EditorGUILayout.Separator();
 
         if (GUILayout.Button("Generate"))
         {
-            var guids1 = AssetDatabase.FindAssets("XSBonerGenerator", null);
-            var untouchedString = AssetDatabase.GUIDToAssetPath(guids1[0]);
-            var splitString = untouchedString.Split('/');
+            string[] guids1 = AssetDatabase.FindAssets("XSBonerGenerator", null);
+            string untouchedString = AssetDatabase.GUIDToAssetPath(guids1[0]);
+            string[] splitString = untouchedString.Split('/');
 
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
             ArrayUtility.RemoveAt(ref splitString, splitString.Length - 1);
 
-            var finalFilePath = string.Join("/", splitString);
-            var pathToGenerated = finalFilePath + "/Generated";
-            var editorPath = string.Join("/", splitString) + "/Editor";
+            string finalFilePath = string.Join("/", splitString);
+            string pathToGenerated = finalFilePath + "/Generated";
+            string editorPath = string.Join("/", splitString) + "/Editor";
 
-            if (!Directory.Exists(pathToGenerated)) Directory.CreateDirectory(pathToGenerated);
+            if (!Directory.Exists(pathToGenerated))
+            {
+                Directory.CreateDirectory(pathToGenerated);
+            }
 
             bone = AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(bone), typeof(Object));
-            boneMaterial =
-                (Material) AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(boneMaterial), typeof(Material));
-            ikMaterial =
-                (Material) AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(ikMaterial), typeof(Material));
+            boneMaterial = (Material)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(boneMaterial), typeof(Material));
+            ikMaterial = (Material)AssetDatabase.LoadAssetAtPath(AssetDatabase.GetAssetPath(ikMaterial), typeof(Material));
 
-            var name = Regex.Replace(ani.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
-            var bonename = Regex.Replace(bone.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
+            string name = Regex.Replace(ani.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
+            string bonename = Regex.Replace(bone.name, "[^a-zA-Z0-9_.]+", "", RegexOptions.Compiled);
 
             bones = new List<Transform>();
             bonesByHash = new Hashtable();
@@ -157,56 +207,56 @@ public class XSBonerGenerator : EditorWindow
             combineInstances = new List<CombineInstance>();
             coloUrs = new List<Color>();
 
-            var boneIndex = 0;
-            foreach (var _bone in ((SkinnedMeshRenderer) smr).bones)
-                if (_bone != null)
+            int boneIndex = 0;
+            foreach (Transform currentBone in ((SkinnedMeshRenderer)smr).bones)
+            {
+                if (currentBone != null)
                 {
-                    bones.Add(_bone);
-                    bonesByHash.Add(_bone.name, boneIndex);
+                    bones.Add(currentBone);
+                    bonesByHash.Add(currentBone.name, boneIndex);
                     boneIndex++;
                 }
+            }
 
-            recursiveShit(startingBone != null ? (Transform) startingBone : ani.GetBoneTransform(HumanBodyBones.Hips),
-                collectDynamicBones(ani.transform));
+            recursiveShit(
+                startingBone != null ? (Transform)startingBone : ani.GetBoneTransform(HumanBodyBones.Hips),
+                collectDynamicBones(ani.transform)
+            );
 
-            //keep bindposes 
-            var bindposes = new List<Matrix4x4>();
+            List<Matrix4x4> bindposes = new List<Matrix4x4>();
+            for (int bindposeIndex = 0; bindposeIndex < bones.Count; bindposeIndex++)
+            {
+                bindposes.Add(bones[bindposeIndex].worldToLocalMatrix * ani.transform.worldToLocalMatrix);
+            }
 
-            for (var b = 0; b < bones.Count; b++)
-                bindposes.Add(bones[b].worldToLocalMatrix * ani.transform.worldToLocalMatrix);
-
-
-            var yourBones = new GameObject(name + "_" + bonename + "_YourBones");
+            GameObject yourBones = new GameObject(name + "_" + bonename + "_YourBones");
             yourBones.transform.parent = ani.transform;
 
-            var yourSkinnedMeshRenderer = yourBones.AddComponent<SkinnedMeshRenderer>();
+            SkinnedMeshRenderer yourSkinnedMeshRenderer = yourBones.AddComponent<SkinnedMeshRenderer>();
             yourSkinnedMeshRenderer.sharedMesh = new Mesh
             {
                 name = name + "_" + bonename + "_YourBones"
             };
 
-
-            //Adding Audio Source for Super Spooky Mode.
             if (spookMode)
             {
                 yourBones.AddComponent<AudioSource>();
-                var doot = yourBones.GetComponent<AudioSource>();
-                doot.clip = (AudioClip) AssetDatabase.LoadAssetAtPath(editorPath + "/Doot.mp3", typeof(AudioClip));
+                AudioSource doot = yourBones.GetComponent<AudioSource>();
+                doot.clip = (AudioClip)AssetDatabase.LoadAssetAtPath(editorPath + "/Doot.mp3", typeof(AudioClip));
                 doot.spatialBlend = 1;
                 doot.dopplerLevel = 0;
                 doot.minDistance = 2;
                 doot.maxDistance = 10;
             }
 
-            //----
             yourSkinnedMeshRenderer.sharedMesh.CombineMeshes(combineInstances.ToArray());
 
-            var scale = ani.transform.localScale;
+            Vector3 scale = ani.transform.localScale;
 
-            var boneVertices = new List<Vector3>();
-            for (var i = 0; i < yourSkinnedMeshRenderer.sharedMesh.vertexCount; i++)
+            List<Vector3> boneVertices = new List<Vector3>();
+            for (int vertexIndex = 0; vertexIndex < yourSkinnedMeshRenderer.sharedMesh.vertexCount; vertexIndex++)
             {
-                var vertex = yourSkinnedMeshRenderer.sharedMesh.vertices[i];
+                Vector3 vertex = yourSkinnedMeshRenderer.sharedMesh.vertices[vertexIndex];
                 vertex.x *= scale.x;
                 vertex.y *= scale.y;
                 vertex.z *= scale.z;
@@ -216,14 +266,10 @@ public class XSBonerGenerator : EditorWindow
 
             if (haveIKLines)
             {
-                IKLines(boneVertices, HumanBodyBones.RightUpperArm, HumanBodyBones.RightHand,
-                    HumanBodyBones.RightLowerArm);
-                IKLines(boneVertices, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftHand,
-                    HumanBodyBones.LeftLowerArm);
-                IKLines(boneVertices, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightFoot,
-                    HumanBodyBones.RightLowerLeg);
-                IKLines(boneVertices, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftFoot,
-                    HumanBodyBones.LeftLowerLeg);
+                IKLines(boneVertices, HumanBodyBones.RightUpperArm, HumanBodyBones.RightHand, HumanBodyBones.RightLowerArm);
+                IKLines(boneVertices, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftHand, HumanBodyBones.LeftLowerArm);
+                IKLines(boneVertices, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightFoot, HumanBodyBones.RightLowerLeg);
+                IKLines(boneVertices, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftFoot, HumanBodyBones.LeftLowerLeg);
             }
 
             yourSkinnedMeshRenderer.sharedMesh.vertices = boneVertices.ToArray();
@@ -231,7 +277,7 @@ public class XSBonerGenerator : EditorWindow
             if (haveIKLines)
             {
                 yourSkinnedMeshRenderer.sharedMesh.subMeshCount = 2;
-                var values = Enumerable.Range(yourSkinnedMeshRenderer.sharedMesh.vertexCount - 12, 12).ToArray();
+                int[] values = Enumerable.Range(yourSkinnedMeshRenderer.sharedMesh.vertexCount - 12, 12).ToArray();
                 yourSkinnedMeshRenderer.sharedMesh.SetTriangles(values, 1);
             }
 
@@ -240,88 +286,106 @@ public class XSBonerGenerator : EditorWindow
             yourSkinnedMeshRenderer.sharedMesh.boneWeights = boneWeights.ToArray();
             yourSkinnedMeshRenderer.sharedMesh.bindposes = bindposes.ToArray();
             yourSkinnedMeshRenderer.sharedMesh.colors = coloUrs.ToArray();
-            yourSkinnedMeshRenderer.sharedMaterials =
-                haveIKLines ? new[] {boneMaterial, ikMaterial} : new[] {boneMaterial};
+            yourSkinnedMeshRenderer.sharedMaterials = haveIKLines
+                ? new Material[] { boneMaterial, ikMaterial }
+                : new Material[] { boneMaterial };
 
             yourSkinnedMeshRenderer.sharedMesh.RecalculateBounds();
 
-            AssetDatabase.CreateAsset(yourSkinnedMeshRenderer.sharedMesh,
-                pathToGenerated + "/" + name + "_" + bonename + "_YourBones.asset");
+            AssetDatabase.CreateAsset(
+                yourSkinnedMeshRenderer.sharedMesh,
+                pathToGenerated + "/" + name + "_" + bonename + "_YourBones.asset"
+            );
             AssetDatabase.SaveAssets();
-
-            var previousMesh = yourSkinnedMeshRenderer.sharedMesh;
-            yourSkinnedMeshRenderer.sharedMesh = null;
-            yourSkinnedMeshRenderer.sharedMesh = previousMesh;
 
             armatureObj = null;
         }
     }
 
-
-    [MenuItem("Xiexe/Tools/XSBonerGenerator")]
-    private static void Init()
-    {
-        var window = (XSBonerGenerator) GetWindow(typeof(XSBonerGenerator));
-        window.Show();
-    }
-
     private HashSet<Transform> collectDynamicBones(Transform transform)
     {
-        var results = new HashSet<Transform>();
+        HashSet<Transform> results = new HashSet<Transform>();
         collectDynamicBones(transform, results);
         return results;
     }
 
     private void collectDynamicBones(Transform transform, HashSet<Transform> results)
     {
-        foreach (var dynamicBone in transform.GetComponents<DynamicBone>())
-            collectDynamicBonesForOneScript(dynamicBone.m_Root, dynamicBone.m_Exclusions, results);
+        foreach (VRCPhysBone dynamicBone in transform.GetComponents<VRCPhysBone>())
+        {
+            collectDynamicBonesForOneScript(dynamicBone.GetRootTransform(), dynamicBone.ignoreTransforms, results);
+        }
 
-        for (var i = 0; i < transform.childCount; i++) collectDynamicBones(transform.GetChild(i), results);
+        for (int childIndex = 0; childIndex < transform.childCount; childIndex++)
+        {
+            collectDynamicBones(transform.GetChild(childIndex), results);
+        }
     }
 
-    private void collectDynamicBonesForOneScript(Transform transform, List<Transform> exclusions,
-        HashSet<Transform> results)
+    private void collectDynamicBonesForOneScript(Transform transform, List<Transform> exclusions, HashSet<Transform> results)
     {
-        if (exclusions.Contains(transform)) return;
+        if (exclusions.Contains(transform))
+        {
+            return;
+        }
 
         results.Add(transform);
 
-        for (var i = 0; i < transform.childCount; i++)
-            collectDynamicBonesForOneScript(transform.GetChild(i), exclusions, results);
+        for (int childIndex = 0; childIndex < transform.childCount; childIndex++)
+        {
+            collectDynamicBonesForOneScript(transform.GetChild(childIndex), exclusions, results);
+        }
     }
 
     private void recursiveShit(Transform transform, HashSet<Transform> dynamicBones)
     {
-        var dynbone = dynamicBones.Contains(transform);
-        if (transform.gameObject.activeInHierarchy && bones.Contains(transform))
-            for (var i = 0; i < transform.childCount; i++)
-            {
-                if (transform.GetChild(i).gameObject.activeInHierarchy)
-                    addCapColl(transform, transform.GetChild(i), dynbone);
+        bool dynbone = dynamicBones.Contains(transform);
 
-                // Always recurse - can have dynamic bones under non-dynamic bones
-                recursiveShit(transform.GetChild(i), dynamicBones);
+        if (transform.gameObject.activeInHierarchy && bones.Contains(transform))
+        {
+            bool hasActiveChildBone = false;
+
+            for (int childIndex = 0; childIndex < transform.childCount; childIndex++)
+            {
+                Transform childTransform = transform.GetChild(childIndex);
+
+                if (!childTransform.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                hasActiveChildBone = true;
+                addCapColl(transform, childTransform, dynbone);
+
+                recursiveShit(childTransform, dynamicBones);
             }
+
+            if (!hasActiveChildBone)
+            {
+                addEndCapColl(transform, dynbone, 0);
+            }
+        }
     }
 
-    //tranform1 = main
-    //tranform2 = child
     private void addCapColl(Transform transform1, Transform transform2, bool dynbone)
     {
-        var boneSpawn = Instantiate(bone, transform1.position, transform1.rotation) as GameObject;
-        var dist = Vector3.Distance(transform1.position, transform2.position) * 0.5f;
+        GameObject boneSpawn = Instantiate(bone, transform1.position, transform1.rotation) as GameObject;
+        float dist = Vector3.Distance(transform1.position, transform2.position) * 0.5f;
+
         boneSpawn.name = transform1.name + " -> " + transform2.name;
         boneSpawn.transform.localScale = new Vector3(dist, dist, dist);
         boneSpawn.transform.LookAt(transform2.position);
-        boneSpawn.transform.rotation =
-            Quaternion.Euler(boneSpawn.transform.rotation.eulerAngles + new Vector3(90f, 0, 0));
-        var isHumanoid = false;
+        boneSpawn.transform.rotation = Quaternion.Euler(
+            boneSpawn.transform.rotation.eulerAngles + new Vector3(90f, 0f, 0f)
+        );
 
-        for (var i = 0; i < (int) HumanBodyBones.LastBone; i++)
+        bool isHumanoid = false;
+        for (int boneIndex = 0; boneIndex < (int)HumanBodyBones.LastBone; boneIndex++)
         {
-            var bone = (HumanBodyBones) i;
-            if (ani.GetBoneTransform(bone) != null && ani.GetBoneTransform(bone).name == transform1.name)
+            HumanBodyBones humanBoneId = (HumanBodyBones)boneIndex;
+            Transform humanBoneTransform = ani.GetBoneTransform(humanBoneId);
+
+            if (humanBoneTransform != null && humanBoneTransform == transform1)
             {
                 isHumanoid = true;
                 break;
@@ -332,72 +396,129 @@ public class XSBonerGenerator : EditorWindow
         DestroyImmediate(boneSpawn);
     }
 
-    private void InsertSMRToCombine(MeshFilter smr, string bonename, bool hoomanoid, bool dynbone)
+    private void addEndCapColl(Transform transform, bool dynbone, float extensionLength)
     {
-        var meshBoneweight = new BoneWeight[smr.sharedMesh.vertexCount];
+        GameObject boneSpawn = Instantiate(bone, transform.position, transform.rotation) as GameObject;
 
+        Vector3 extensionDirection = transform.up;
 
-        // remap bone weight bone indexes to the hashtable obtained from base object
-        foreach (var bw in meshBoneweight)
+        float previousBoneLength = extensionLength;
+        if (transform.parent != null)
         {
-            var bWeight = bw;
+            previousBoneLength = Vector3.Distance(transform.position, transform.parent.position);
+        }
 
-            if (bonesByHash[bonename] != null)
+        Vector3 endPosition = transform.position + extensionDirection * previousBoneLength;
+
+        boneSpawn.name = transform.name + " -> End";
+        boneSpawn.transform.localScale = new Vector3(
+            previousBoneLength * 0.5f,
+            previousBoneLength * 0.5f,
+            previousBoneLength * 0.5f
+        );
+        boneSpawn.transform.LookAt(endPosition);
+        boneSpawn.transform.rotation = Quaternion.Euler(
+            boneSpawn.transform.rotation.eulerAngles + new Vector3(90f, 0f, 0f)
+        );
+
+        bool isHumanoid = false;
+        for (int boneIndex = 0; boneIndex < (int)HumanBodyBones.LastBone; boneIndex++)
+        {
+            HumanBodyBones humanBoneId = (HumanBodyBones)boneIndex;
+            Transform humanBoneTransform = ani.GetBoneTransform(humanBoneId);
+
+            if (humanBoneTransform != null && humanBoneTransform == transform)
             {
-                bWeight.boneIndex0 = (int) bonesByHash[bonename];
-                bWeight.weight0 = 1;
-
-                boneWeights.Add(bWeight);
+                isHumanoid = true;
+                break;
             }
         }
 
-        //add the smr to the combine list; also add to destroy list
-        var ci = new CombineInstance();
-        ci.mesh = smr.sharedMesh;
+        InsertSMRToCombine(boneSpawn.GetComponentInChildren<MeshFilter>(), transform.name, isHumanoid, dynbone);
+        DestroyImmediate(boneSpawn);
+    }
 
-        ci.transform = smr.transform.localToWorldMatrix;
+    private void InsertSMRToCombine(MeshFilter meshFilter, string bonename, bool hoomanoid, bool dynbone)
+    {
+        if (meshFilter == null || meshFilter.sharedMesh == null)
+        {
+            return;
+        }
 
-        var colour = new Color();
+        if (bonesByHash[bonename] == null)
+        {
+            return;
+        }
+
+        int boneIndex = (int)bonesByHash[bonename];
+
+        for (int vertexIndex = 0; vertexIndex < meshFilter.sharedMesh.vertexCount; vertexIndex++)
+        {
+            BoneWeight boneWeight = new BoneWeight
+            {
+                boneIndex0 = boneIndex,
+                weight0 = 1f
+            };
+
+            boneWeights.Add(boneWeight);
+        }
+
+        CombineInstance combineInstance = new CombineInstance
+        {
+            mesh = meshFilter.sharedMesh,
+            transform = meshFilter.transform.localToWorldMatrix
+        };
+
+        Color colour = new Color();
         if (dynbone)
+        {
             colour = Color.blue;
-        else if (hoomanoid) colour = Color.red;
+        }
+        else if (hoomanoid)
+        {
+            colour = Color.red;
+        }
 
-        for (var i = 0; i < smr.sharedMesh.vertexCount; i++) coloUrs.Add(colour);
-        combineInstances.Add(ci);
+        for (int vertexIndex = 0; vertexIndex < meshFilter.sharedMesh.vertexCount; vertexIndex++)
+        {
+            coloUrs.Add(colour);
+        }
+
+        combineInstances.Add(combineInstance);
     }
 
     private void IKLines(List<Vector3> vertices, HumanBodyBones upper, HumanBodyBones joint, HumanBodyBones lower)
     {
-        var upperT = ani.GetBoneTransform(upper);
-        var jointT = ani.GetBoneTransform(joint);
-        var lowerT = ani.GetBoneTransform(lower);
+        Transform upperT = ani.GetBoneTransform(upper);
+        Transform jointT = ani.GetBoneTransform(joint);
+        Transform lowerT = ani.GetBoneTransform(lower);
 
         if (upperT == null) return;
         if (jointT == null) return;
         if (lowerT == null) return;
 
-        var _boneWeights = new BoneWeight[3];
-        _boneWeights[0].boneIndex0 = (int) bonesByHash[upperT.name];
-        _boneWeights[0].weight0 = 1;
-        _boneWeights[1].boneIndex0 = (int) bonesByHash[lowerT.name];
-        _boneWeights[1].weight0 = 1;
-        _boneWeights[2].boneIndex0 = (int) bonesByHash[upperT.name];
-        _boneWeights[2].weight0 = 1;
+        BoneWeight[] ikBoneWeights = new BoneWeight[3];
+        ikBoneWeights[0].boneIndex0 = (int)bonesByHash[upperT.name];
+        ikBoneWeights[0].weight0 = 1;
+        ikBoneWeights[1].boneIndex0 = (int)bonesByHash[lowerT.name];
+        ikBoneWeights[1].weight0 = 1;
+        ikBoneWeights[2].boneIndex0 = (int)bonesByHash[upperT.name];
+        ikBoneWeights[2].weight0 = 1;
 
-        boneWeights.Add(_boneWeights[0]);
-        boneWeights.Add(_boneWeights[1]);
-        boneWeights.Add(_boneWeights[2]);
+        boneWeights.Add(ikBoneWeights[0]);
+        boneWeights.Add(ikBoneWeights[1]);
+        boneWeights.Add(ikBoneWeights[2]);
 
-        var scale = ani.transform.localScale;
+        Vector3 scale = ani.transform.localScale;
 
-        var upperV = upperT.position;
+        Vector3 upperV = upperT.position;
         upperV.x *= scale.x;
         upperV.y *= scale.y;
         upperV.z *= scale.z;
         upperV += ani.transform.position;
         vertices.Add(upperV);
 
-        var jointV = jointT.position;
+        Vector3 jointV = jointT.position;
         jointV.x *= scale.x;
         jointV.y *= scale.y;
         jointV.z *= scale.z;
